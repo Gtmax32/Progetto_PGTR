@@ -63,7 +63,7 @@ glm::vec3 lightPositions[] = {
 };  
 
 // Uniform da passare agli shader 
-glm::vec3 diffuseColor(1.0f, 0.0f, 1.0f);
+//glm::vec3 diffuseColor(1.0f, 0.0f, 0.0f);
 glm::vec3 specularColor(1.0f, 1.0f, 1.0f);
 glm::vec3 ambientColor(0.1f, 0.1f, 0.1f);
 // pesi della componente diffusive, speculari e ambientali
@@ -84,8 +84,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
-// Funzione di utility per caricare delle texture
-GLuint loadTexture(char const * path);
+GLuint loadTexture(const char* path);
 
 int main(){
 	//INIZIALIZZO GLFW
@@ -133,17 +132,33 @@ int main(){
 	//SETTO IL DEPTH TEST
 	glEnable(GL_DEPTH_TEST);
 	
+	//DEFINISCO I COLORI DELLE PALLE DA BILIARDO UTILIZZATE NEL GIOCO
+	glm::vec3 colorWhite(1.0f, 1.0f, 1.0f);
+	glm::vec3 colorRed(1.0f, 0.0f, 0.0f);
+	glm::vec3 colorYellow(1.0f, 1.0f, 0.0f);
+	
+	//DEFINISCO LE POSIZIONI DELLE PALLE DA GIOCO
+	glm::vec3 positionWhite(-3.0f, 0.0f, 0.0f);
+	glm::vec3 positionRed(0.0f, 0.0f, 0.0f);
+	glm::vec3 positionYellow(3.0f, 0.0f, 0.0f);
+	
 	//UTILIZZO LA CLASSE SHADER CREATA PER COMPILARE IL VS ED IL FS, E LINKARLI NEL PS
-	Shader shaderBall("../13_phong.vert", "../13b_blinnphong.frag");
+	Shader shaderNoTexture("../13_phong.vert", "../13b_blinnphong.frag");
+	Shader shaderTexture("../18_phong_tex_multiplelights.vert","../18_blinnphong_tex_multiplelights.frag");
 	
 	//UTILIZZO LA CLASSE MODEL CREATA PER CARICARE E VISUALIZZARE IL MODELLO 3D
 	//Model model3D("../../../models/cube.obj");
 	//Model modelBall("../../table/resource/Ball3.obj");
 	//Model modelRoom("../../table/resource/Room.obj");
 	Model modelTable("../../models/table/pooltable.obj");
-	Model modelBall("../../models/ball/ball.obj");
+	Model modelBallWhite("../../models/ball/ball.obj"),
+		  modelBallRed("../../models/ball/ball.obj"),
+		  modelBallYellow("../../models/ball/ball.obj");
+	Model modelPin("../../models/pin/High_Poly.obj");
+	Model modelPlane("../../models/plane/plane.obj");
 	
-	//GLint textureBall = loadTexture("../../textures/ball.bmp");
+	//CARICO LA TEXTURE
+	GLint texturePlane = loadTexture("../../textures/floor.jpg");
 	
 	//AVVIO IL RENDER LOOP
 	while(!glfwWindowShouldClose(window)){
@@ -157,56 +172,156 @@ int main(){
 		glClearColor(0.31f, 0.76f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		shaderBall.Use();
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, textureBall);
+		shaderNoTexture.Use();
 		
-		shaderBall.setVec3("diffuseColor", diffuseColor);
-		shaderBall.setVec3("ambientColor", ambientColor);
-		shaderBall.setVec3("specularColor", specularColor);
+		//RENDERIZZO LE PALLE DA BILIARDO
+		//INIZIO DALLA BIANCA
+		shaderNoTexture.setVec3("diffuseColor", colorWhite);
+		shaderNoTexture.setVec3("ambientColor", ambientColor);
+		shaderNoTexture.setVec3("specularColor", specularColor);
 		
 		// Per ogni luce nello shader, passo la posizione corrispondente
-        for(GLuint i = 0; i < NR_LIGHTS; i++){
-            string number = to_string(i);
-            shaderBall.setVec3(("lights[" + number + "]").c_str(), lightPositions[i]);
+		for(GLuint i = 0; i < NR_LIGHTS; i++){
+			string number = to_string(i);
+			shaderNoTexture.setVec3(("lights[" + number + "]").c_str(), lightPositions[i]);
 			//glUniform3fv(glGetUniformLocation(shaders[current_program].Program, ("lights[" + number + "]").c_str()), 1, glm::value_ptr(lightPositions[i]));
-        }
+		}
 		
-		shaderBall.setFloat("Kd",Kd);		
-		shaderBall.setFloat("Ka", Ka);
-		shaderBall.setFloat("Ks", Ks);
+		shaderNoTexture.setFloat("Kd",Kd);		
+		shaderNoTexture.setFloat("Ka", Ka);
+		shaderNoTexture.setFloat("Ks", Ks);
 		
-		shaderBall.setFloat("constant",constant);
-		shaderBall.setFloat("linear", linear);
-		shaderBall.setFloat("quadratic", quadratic);
-		shaderBall.setFloat("shininess", shininess);
+		shaderNoTexture.setFloat("constant",constant);
+		shaderNoTexture.setFloat("linear", linear);
+		shaderNoTexture.setFloat("quadratic", quadratic);
+		shaderNoTexture.setFloat("shininess", shininess);
 		
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
-		shaderBall.setMat4("projectionMatrix", projection);
+		shaderNoTexture.setMat4("projectionMatrix", projection);
 		
 		glm::mat4 view = camera.GetViewMatrix();
-		shaderBall.setMat4("viewMatrix", view);
+		shaderNoTexture.setMat4("viewMatrix", view);
 		
 		/* Crea la matrice delle trasformazioni tramite la definizione delle 3 trasformazioni
-           NB) l'ultima definita è la prima applicata
-           Crea anche la matrice di trasformazione delle normali, che è l'inversa della trasposta della sottomatrice 3x3 (sup sinistra) della modelview.
-           Tolgo la 4a colonna per non considerare le traslazioni. Vedere la spiegazione seguente per capire perchè serve l'inversa della trasposta:
-        
+		   NB) l'ultima definita è la prima applicata
+		   Crea anche la matrice di trasformazione delle normali, che è l'inversa della trasposta della sottomatrice 3x3 (sup sinistra) della modelview.
+		   Tolgo la 4a colonna per non considerare le traslazioni. Vedere la spiegazione seguente per capire perchè serve l'inversa della trasposta:
+		
 		   Two column vectors X and Y are perpendicular if and only if XT.Y=0. If We're going to transform X by a matrix M, we need to transform Y 
 		   by some matrix N so that (M.X)T.(N.Y)=0. Using the identity (A.B)T=BT.AT, this becomes (XT.MT).(N.Y)=0 => XT.(MT.N).Y=0. If MT.N is the 
 		   identity matrix then this reduces to XT.Y=0. And MT.N is the identity matrix if and only if N=(MT)-1, i.e. N is the inverse of the transpose of M.*/
-        glm::mat4 sphereModelMatrix;
-        glm::mat3 sphereNormalMatrix;
-        //sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f)); 
-        //sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
+		glm::mat4 sphereModelMatrix;
+		glm::mat3 sphereNormalMatrix;
+		sphereModelMatrix = glm::translate(sphereModelMatrix, positionWhite); 
+		//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
 		// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
-        sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+		sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
 		
-		shaderBall.setMat4("modelMatrix", sphereModelMatrix);
-		shaderBall.setMat3("normalMatrix",sphereNormalMatrix);
+		shaderNoTexture.setMat4("modelMatrix", sphereModelMatrix);
+		shaderNoTexture.setMat3("normalMatrix",sphereNormalMatrix);
 		
-		modelBall.Draw(shaderBall);
+		modelBallWhite.Draw(shaderNoTexture);
+		
+		//RENDERIZZO LA PALLA ROSSA
+		shaderNoTexture.setVec3("diffuseColor", colorRed);
+		
+		sphereModelMatrix = glm::mat4();
+		sphereNormalMatrix = glm::mat4();
+		
+		sphereModelMatrix = glm::translate(sphereModelMatrix, positionRed); 
+		//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
+		// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
+		sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+		
+		shaderNoTexture.setMat4("modelMatrix", sphereModelMatrix);
+		shaderNoTexture.setMat3("normalMatrix",sphereNormalMatrix);
+		
+		modelBallRed.Draw(shaderNoTexture);
+		
+		//RENDERIZZO LA PALLA ROSSA
+		shaderNoTexture.setVec3("diffuseColor", colorYellow);
+		
+		sphereModelMatrix = glm::mat4();
+		sphereNormalMatrix = glm::mat4();
+		
+		sphereModelMatrix = glm::translate(sphereModelMatrix, positionYellow); 
+		//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.5f, 0.5f, 0.5f));
+		// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
+		sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+		
+		shaderNoTexture.setMat4("modelMatrix", sphereModelMatrix);
+		shaderNoTexture.setMat3("normalMatrix",sphereNormalMatrix);
+		
+		modelBallYellow.Draw(shaderNoTexture);
+		
+		//RENDERIZZO IL TAVOLO
+		shaderTexture.Use();
+		
+		shaderTexture.setVec3("diffuseColor", colorWhite);
+		shaderTexture.setVec3("ambientColor", ambientColor);
+		shaderTexture.setVec3("specularColor", specularColor);
+		
+		// Per ogni luce nello shader, passo la posizione corrispondente
+		for(GLuint i = 0; i < NR_LIGHTS; i++){
+			string number = to_string(i);
+			shaderTexture.setVec3(("lights[" + number + "]").c_str(), lightPositions[i]);
+			//glUniform3fv(glGetUniformLocation(shaders[current_program].Program, ("lights[" + number + "]").c_str()), 1, glm::value_ptr(lightPositions[i]));
+		}
+		
+		shaderTexture.setFloat("Kd",Kd);		
+		shaderTexture.setFloat("Ka", Ka);
+		shaderTexture.setFloat("Ks", Ks);
+		
+		shaderTexture.setFloat("constant",constant);
+		shaderTexture.setFloat("linear", linear);
+		shaderTexture.setFloat("quadratic", quadratic);
+		shaderTexture.setFloat("shininess", shininess);
+		
+		shaderTexture.setFloat("repeat", 1.0f);
+		
+		sphereModelMatrix = glm::mat4();
+		sphereNormalMatrix = glm::mat4();
+		
+		sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, -8.0f, 0.0f)); 
+		//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(25.0f, 25.0f, 25.0f));
+		sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+		
+		shaderTexture.setMat4("projectionMatrix", projection);
+		shaderTexture.setMat4("viewMatrix", view);
+		shaderTexture.setMat4("modelMatrix", sphereModelMatrix);
+		shaderTexture.setMat3("normalMatrix",sphereNormalMatrix);
+		
+		modelTable.Draw(shaderTexture);
+		
+		//RENDERIZZO I BIRILLI
+		sphereModelMatrix = glm::mat4();
+		
+		sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, 3.0f, 0.0f)); 
+		//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.05f, 0.05f, 0.05f));
+		
+		shaderTexture.setMat4("modelMatrix", sphereModelMatrix);
+		modelPin.Draw(shaderTexture);
+
+		//RENDERIZZO IL PIANO
+		shaderTexture.setInt("tex",0);
+		shaderTexture.setFloat("repeat",80.0f);
+		
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texturePlane);
+		
+		sphereModelMatrix = glm::mat4();
+		
+		sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, -8.01f, 0.0f)); 
+		//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(50.0f, 1.0f, 50.0f));
+		
+		shaderTexture.setMat4("modelMatrix", sphereModelMatrix);
+		modelPlane.Draw(shaderTexture);
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();		
@@ -259,21 +374,21 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
     camera.ProcessMouseScroll(yoffset);
 }
 
+// Carico immagine da disco e creo texture OpengGL
 GLuint loadTexture(char const * path){
     GLuint textureID;
     glGenTextures(1, &textureID);
-    
-    int width, height, nrComponents;
+
+    GLint width, height, nrComponents;
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-    
-	if (data){
+    if (data){
         GLenum format;
         if (nrComponents == 1)
             format = GL_RED;
         else if (nrComponents == 3)
-				format = GL_RGB;
-			 else if (nrComponents == 4)
-					format = GL_RGBA;
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
@@ -284,13 +399,12 @@ GLuint loadTexture(char const * path){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        
+        stbi_image_free(data);
     }
-    else {
-        std::cout << "Failed to load texture: " << path << "!" << std::endl;
+    else{
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
     }
-	
-	stbi_image_free(data);
-	
+
     return textureID;
 }
