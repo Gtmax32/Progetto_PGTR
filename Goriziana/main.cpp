@@ -63,7 +63,7 @@ glm::vec3 lightPositions[] = {
 };  
 
 // Uniform da passare agli shader 
-glm::vec3 diffuseColor(1.0f, 1.0f, 1.0f);
+glm::vec3 diffuseColor(1.0f, 0.0f, 1.0f);
 glm::vec3 specularColor(1.0f, 1.0f, 1.0f);
 glm::vec3 ambientColor(0.1f, 0.1f, 0.1f);
 // pesi della componente diffusive, speculari e ambientali
