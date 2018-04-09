@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=Pc-Utente
-Date                   :=08/04/2018
+Date                   :=09/04/2018
 CodeLitePath           :="C:/Program Files/CodeLite"
 LinkerName             :=C:/MinGW/bin/g++.exe
 SharedObjectLinkerName :=C:/MinGW/bin/g++.exe -shared -fPIC
@@ -38,11 +38,11 @@ MakeDirCommand         :=makedir
 RcCmpOptions           := 
 RcCompilerName         :=C:/MinGW/bin/windres.exe
 LinkOptions            :=  -static-libstdc++ -static-libgcc 
-IncludePath            :=  $(IncludeSwitch). $(IncludeSwitch). $(IncludeSwitch)../include 
+IncludePath            :=  $(IncludeSwitch). $(IncludeSwitch). $(IncludeSwitch)../include $(IncludeSwitch)../include/bullet 
 IncludePCH             := 
 RcIncludePath          := 
-Libs                   := $(LibrarySwitch)glfw3 $(LibrarySwitch)assimp 
-ArLibs                 :=  "glfw3" "assimp" 
+Libs                   := $(LibrarySwitch)glfw3 $(LibrarySwitch)assimp $(LibrarySwitch)BulletDynamics $(LibrarySwitch)BulletCollision $(LibrarySwitch)Bullet3Dynamics $(LibrarySwitch)Bullet3Collision $(LibrarySwitch)LinearMath 
+ArLibs                 :=  "glfw3" "assimp" "BulletDynamics" "BulletCollision" "Bullet3Dynamics" "Bullet3Collision" "LinearMath" 
 LibPath                := $(LibraryPathSwitch). $(LibraryPathSwitch)../libs/win 
 
 ##

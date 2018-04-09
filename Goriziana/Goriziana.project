@@ -27,11 +27,17 @@
       <Compiler Options="-g;-O0;-Wall;-std=c++0x" C_Options="-g;-O0;-Wall" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
         <IncludePath Value="."/>
         <IncludePath Value="../include"/>
+        <IncludePath Value="../include/bullet"/>
       </Compiler>
       <Linker Options="-static-libstdc++;-static-libgcc;" Required="yes">
         <LibraryPath Value="../libs/win"/>
         <Library Value="glfw3"/>
         <Library Value="assimp"/>
+        <Library Value="BulletDynamics"/>
+        <Library Value="BulletCollision"/>
+        <Library Value="Bullet3Dynamics"/>
+        <Library Value="Bullet3Collision"/>
+        <Library Value="LinearMath"/>
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
       <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>

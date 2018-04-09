@@ -25,7 +25,7 @@ enum Camera_Movement {
 
 // Impostazioni di default di camera
 const float YAW         = -90.0f;
-const float PITCH       =  0.0f;
+const float PITCH       = 0.0f;
 // Parametri per gestione interazione con il mouse
 const float SPEED       =  2.5f;
 const float SENSITIVITY =  0.1f;
@@ -93,7 +93,7 @@ public:
 		if (direction == RIGHT)
             this->Position += this->Right * velocity;
 		
-		this->Position.y = 0.0f; // <-- this one-liner keeps the user at the ground level (xz plane)
+		//this->Position.y = 0.0f; // <-- this one-liner keeps the user at the ground level (xz plane)
     }
 
     // Aggiorna la posizione della camera in base al movimento del mouse
@@ -131,6 +131,11 @@ public:
 		if (Zoom >= 45.0f)
             Zoom = 45.0f;
     }
+	
+	// Ruota la camera per ottenere una visuale dall'alto
+	void RotateCamera(){
+		
+	}
 
 private:
     // Aggiorna il sistema di riferimento della camera
