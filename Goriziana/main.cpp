@@ -1,8 +1,3 @@
-/* Codice ricavato dai tutorial della categoria Model Loading,	
- * partendo dal codice ottenuto dai tutorial precedenti.
- * Pagina web di riferimento: https://learnopengl.com/Model-Loading/Model
- */
-
 #include <iostream>
 #include <vector>
 // THIS IS OPTIONAL AND NOT REQUIRED, ONLY USE THIS IF YOU DON'T WANT GLAD TO INCLUDE windows.h
@@ -45,7 +40,7 @@
 const GLuint SCR_WIDTH = 1280, SCR_HEIGHT = 720;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 8.0f, 7.0f));
+Camera camera(glm::vec3(2.0f, 10.0f, 7.0f));
 
 // Variabili utilizzate per implementare una Camera FPS
 GLfloat lastX = (float)SCR_WIDTH / 2.0f;
@@ -55,9 +50,6 @@ GLfloat firstMouse = true;
 // Deltatime per uniformare la velocità di movimento
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
-
-//Dimensione della sfera
-glm::vec3 sphereSize = glm::vec3(0.5f, 0.5f, 0.5f);
 
 // Posizione del light cube nella scena
 glm::vec3 lightPos(0.5f, 0.2f, 2.0f);
@@ -84,7 +76,16 @@ GLfloat constant = 1.0f;
 GLfloat linear = 0.09f;
 GLfloat quadratic = 0.032f;
 
-Physics poolSimulation;
+//Dimensione della sfera
+glm::vec3 sphereSize = glm::vec3(0.5f, 0.5f, 0.5f);
+//Posizione delle palle del gioco
+glm::vec3 poolBallPos[] = {
+	glm::vec3(-3.0f, 8.0f, 0.0f), // palla bianca
+	glm::vec3(0.0f, 8.0f, 0.0f), // palla rossa
+	glm::vec3(3.0f, 8.0f, 0.0f) // palla gialla
+};
+
+glm::vec3 poolPlanePos = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // Registra gli eventi che modificano le dimensioni della finestra
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -95,7 +96,7 @@ void processInput(GLFWwindow* window);
 // Funzioni di utility
 GLuint loadTexture(const char* path);
 void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin);
-void draw_model_notexture(Shader &shader, Model &ball);
+void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, btRigidBody* bodyRed, btRigidBody* bodyYellow);
 
 int main(){
 	//INIZIALIZZO GLFW
@@ -143,6 +144,8 @@ int main(){
 	//SETTO IL DEPTH TEST
 	glEnable(GL_DEPTH_TEST);
 	
+	Physics poolSimulation;
+	
 	//UTILIZZO LA CLASSE SHADER CREATA PER COMPILARE IL VS ED IL FS, E LINKARLI NEL PS
 	Shader shaderNoTexture("../shaderNoTexture.vert", "../shaderNoTexture.frag");
 	Shader shaderTexture("../shaderTexture.vert","../shaderTexture.frag");
@@ -155,15 +158,18 @@ int main(){
 	Model modelPlane("../../models/plane/plane.obj");
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE AL PIANO
-	glm::vec3 bodyPlanePos = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 bodyPlaneSize = glm::vec3(50.0f, 1.0f, 50.0f);
 	glm::vec3 bodyPlaneRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	
-	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, bodyPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);
+	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, poolPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE ALLE PALLE
 	glm::vec3 bodyBallRadius = sphereSize;
 	glm::vec3 bodyBallRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	
+	btRigidBody* bodyBallWhite = poolSimulation.createRigidBody(1, poolBallPos[0], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);
+	btRigidBody* bodyBallRed = poolSimulation.createRigidBody(1, poolBallPos[1], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);
+	btRigidBody* bodyBallYellow = poolSimulation.createRigidBody(1, poolBallPos[2], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);	
 	
 	// imposto il delta di tempo massimo per aggiornare la simulazione fisica
     GLfloat maxSecPerFrame = 1.0f / 60.0f;
@@ -171,8 +177,7 @@ int main(){
 	//AVVIO IL RENDER LOOP
 	while(!glfwWindowShouldClose(window)){
 		GLfloat currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		
+		deltaTime = currentFrame - lastFrame;		
 		lastFrame = currentFrame;
 		
 		processInput(window);
@@ -180,11 +185,11 @@ int main(){
 		glClearColor(0.31f, 0.76f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		draw_model_notexture(shaderNoTexture, modelBall);
+		poolSimulation.dynamicsWorld->stepSimulation((deltaTime < maxSecPerFrame ? deltaTime : maxSecPerFrame), 10);
+		
+		draw_model_notexture(shaderNoTexture, modelBall, bodyBallWhite, bodyBallRed, bodyBallYellow);
 		
 		draw_model_texture(shaderTexture, modelPlane, modelTable, modelPin);		
-		
-		
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();		
@@ -272,10 +277,9 @@ GLuint loadTexture(char const * path){
     return textureID;
 }
 
-void draw_model_notexture(Shader &shader, Model &ball){
-	//CREO IL CORPO RIGIDO DA ASSEGNARE ALLE PALLE
-	glm::vec3 bodyBallRadius = sphereSize;
-	glm::vec3 bodyBallRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, btRigidBody* bodyRed, btRigidBody* bodyYellow){	
+	GLfloat matrix[16];
+	btTransform transform;
 	
 	shader.Use();
 		
@@ -289,7 +293,6 @@ void draw_model_notexture(Shader &shader, Model &ball){
 	for(GLuint i = 0; i < NR_LIGHTS; i++){
 		string number = to_string(i);
 		shader.setVec3(("lights[" + number + "]").c_str(), lightPositions[i]);
-		//glUniform3fv(glGetUniformLocation(shaders[current_program].Program, ("lights[" + number + "]").c_str()), 1, glm::value_ptr(lightPositions[i]));
 	}
 	
 	shader.setFloat("Kd",Kd);		
@@ -307,51 +310,61 @@ void draw_model_notexture(Shader &shader, Model &ball){
 	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("viewMatrix", view);
 	
-	glm::mat4 sphereModelMatrix;
-	glm::mat3 sphereNormalMatrix;
+	glm::mat4 modelMatrix;
+	glm::mat3 normalMatrix;
 	
-	sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(-3.0f, 8.0f, 0.0f)); 
-	//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	sphereModelMatrix = glm::scale(sphereModelMatrix, sphereSize);
+	bodyWhite->getMotionState()->getWorldTransform(transform);
+	transform.getOpenGLMatrix(matrix);
 	
-	sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+	modelMatrix = glm::translate(modelMatrix, poolBallPos[0]); 
+	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = glm::scale(modelMatrix, sphereSize);
+	modelMatrix = glm::make_mat4(matrix) * modelMatrix;
 	
-	shader.setMat4("modelMatrix", sphereModelMatrix);
-	shader.setMat3("normalMatrix",sphereNormalMatrix);
+	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	
+	shader.setMat4("modelMatrix", modelMatrix);
+	shader.setMat3("normalMatrix",normalMatrix);
 	
 	ball.Draw(shader);
 	
 	//RENDERIZZO LA PALLA ROSSA
 	shader.setVec3("diffuseColor", 1.0f, 0.0f, 0.0f);
 	
-	sphereModelMatrix = glm::mat4();
-	sphereNormalMatrix = glm::mat4();
+	modelMatrix = glm::mat4();
+	normalMatrix = glm::mat4();
 	
-	sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, 8.0f, 0.0f)); 
-	//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	sphereModelMatrix = glm::scale(sphereModelMatrix, sphereSize);
+	bodyRed->getMotionState()->getWorldTransform(transform);
+	transform.getOpenGLMatrix(matrix);
+	
+	modelMatrix = glm::translate(modelMatrix, poolBallPos[1]); 
+	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
 	// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
-	sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
-	shader.setMat4("modelMatrix", sphereModelMatrix);
-	shader.setMat3("normalMatrix",sphereNormalMatrix);
+	shader.setMat4("modelMatrix", modelMatrix);
+	shader.setMat3("normalMatrix",normalMatrix);
 	
 	ball.Draw(shader);
 	
 	//RENDERIZZO LA PALLA GIALLA
 	shader.setVec3("diffuseColor", 1.0f, 1.0f, 0.0f);
 	
-	sphereModelMatrix = glm::mat4();
-	sphereNormalMatrix = glm::mat4();
+	modelMatrix = glm::mat4();
+	normalMatrix = glm::mat4();
 	
-	sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(3.0f, 8.0f, 0.0f)); 
-	//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	sphereModelMatrix = glm::scale(sphereModelMatrix, sphereSize);
+	bodyYellow->getMotionState()->getWorldTransform(transform);
+	transform.getOpenGLMatrix(matrix);
+	
+	modelMatrix = glm::translate(modelMatrix, poolBallPos[2]); 
+	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
 	// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
-	sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
-	shader.setMat4("modelMatrix", sphereModelMatrix);
-	shader.setMat3("normalMatrix",sphereNormalMatrix);
+	shader.setMat4("modelMatrix", modelMatrix);
+	shader.setMat3("normalMatrix",normalMatrix);
 	
 	ball.Draw(shader);
 }
@@ -370,7 +383,6 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
 	for(GLuint i = 0; i < NR_LIGHTS; i++){
 		string number = to_string(i);
 		shader.setVec3(("lights[" + number + "]").c_str(), lightPositions[i]);
-		//glUniform3fv(glGetUniformLocation(shaders[current_program].Program, ("lights[" + number + "]").c_str()), 1, glm::value_ptr(lightPositions[i]));
 	}
 	
 	shader.setFloat("Kd",Kd);		
@@ -390,29 +402,29 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
 	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("viewMatrix", view);
 	
-	glm::mat4 sphereModelMatrix;
-	glm::mat4 sphereNormalMatrix;
+	glm::mat4 modelMatrix;
+	glm::mat4 normalMatrix;
 	
-	sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, 0.1f, 0.0f)); 
-	//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(25.0f, 25.0f, 25.0f));
-	sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.1f, 0.0f)); 
+	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(25.0f, 25.0f, 25.0f));
+	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
 	shader.setMat4("projectionMatrix", projection);
 	shader.setMat4("viewMatrix", view);
-	shader.setMat4("modelMatrix", sphereModelMatrix);
-	shader.setMat3("normalMatrix",sphereNormalMatrix);
+	shader.setMat4("modelMatrix", modelMatrix);
+	shader.setMat3("normalMatrix",normalMatrix);
 	
 	table.Draw(shader);
 	
 	//RENDERIZZO I BIRILLI
-	sphereModelMatrix = glm::mat4();
+	modelMatrix = glm::mat4();
 	
-	sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, 11.0f, 0.0f)); 
-	//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.05f, 0.05f, 0.05f));
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 11.0f, 0.0f)); 
+	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.05f, 0.05f, 0.05f));
 	
-	shader.setMat4("modelMatrix", sphereModelMatrix);
+	shader.setMat4("modelMatrix", modelMatrix);
 	pin.Draw(shader);
 
 	//RENDERIZZO IL PIANO
@@ -422,13 +434,13 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	
-	sphereModelMatrix = glm::mat4();
+	modelMatrix = glm::mat4();
 	
-	sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f)); 
-	//sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(50.0f, 1.0f, 50.0f));
+	modelMatrix = glm::translate(modelMatrix, poolPlanePos); 
+	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(50.0f, 1.0f, 50.0f));
 	
-	shader.setMat4("modelMatrix", sphereModelMatrix);
+	shader.setMat4("modelMatrix", modelMatrix);
 	plane.Draw(shader);
 }
 
