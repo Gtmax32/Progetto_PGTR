@@ -8,6 +8,8 @@
   <Description/>
   <Dependencies/>
   <VirtualDirectory Name="src">
+    <File Name="BulletDebugDrawer.cpp"/>
+    <File Name="BulletDebugDrawer.h"/>
     <File Name="Ball.cpp"/>
     <File Name="Ball.h"/>
     <File Name="glad.c"/>

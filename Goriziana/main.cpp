@@ -40,7 +40,7 @@
 const GLuint SCR_WIDTH = 1280, SCR_HEIGHT = 720;
 
 // Camera
-Camera camera(glm::vec3(2.0f, 10.0f, 7.0f));
+Camera camera(glm::vec3(0.0f, 10.0f, 10.0f));
 
 // Variabili utilizzate per implementare una Camera FPS
 GLfloat lastX = (float)SCR_WIDTH / 2.0f;
@@ -158,7 +158,7 @@ int main(){
 	Model modelPlane("../../models/plane/plane.obj");
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE AL PIANO
-	glm::vec3 bodyPlaneSize = glm::vec3(50.0f, 1.0f, 50.0f);
+	glm::vec3 bodyPlaneSize = glm::vec3(50.0f, 0.1f, 50.0f);
 	glm::vec3 bodyPlaneRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	
 	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, poolPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);
@@ -318,8 +318,8 @@ void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, b
 	
 	modelMatrix = glm::translate(modelMatrix, poolBallPos[0]); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::scale(modelMatrix, sphereSize);
-	modelMatrix = glm::make_mat4(matrix) * modelMatrix;
+	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
+	//modelMatrix = glm::make_mat4(matrix) * modelMatrix;
 	
 	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
