@@ -33,6 +33,7 @@
 
 // Libreria per la simulazione fisica
 #include <bullet/btBulletDynamicsCommon.h>
+#include "BulletDebugDrawer.h"
 
 #define NR_LIGHTS 3
 
@@ -40,7 +41,7 @@
 const GLuint SCR_WIDTH = 1280, SCR_HEIGHT = 720;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 10.0f, 10.0f));
+Camera camera(glm::vec3(0.0f, 9.0f, 20.0f));
 
 // Variabili utilizzate per implementare una Camera FPS
 GLfloat lastX = (float)SCR_WIDTH / 2.0f;
@@ -80,9 +81,9 @@ GLfloat quadratic = 0.032f;
 glm::vec3 sphereSize = glm::vec3(0.5f, 0.5f, 0.5f);
 //Posizione delle palle del gioco
 glm::vec3 poolBallPos[] = {
-	glm::vec3(-3.0f, 8.0f, 0.0f), // palla bianca
-	glm::vec3(0.0f, 8.0f, 0.0f), // palla rossa
-	glm::vec3(3.0f, 8.0f, 0.0f) // palla gialla
+	glm::vec3(-3.0f, 14.0f, 0.0f), // palla bianca
+	glm::vec3(0.0f, 14.0f, 0.0f), // palla rossa
+	glm::vec3(3.0f, 14.0f, 0.0f) // palla gialla
 };
 
 glm::vec3 poolPlanePos = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -97,6 +98,15 @@ void processInput(GLFWwindow* window);
 GLuint loadTexture(const char* path);
 void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin);
 void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, btRigidBody* bodyRed, btRigidBody* bodyYellow);
+
+// Funzioni per gestire il gioco
+void throw_ball();
+
+Physics poolSimulation;
+BulletDebugDrawer debugger;
+
+glm::mat4 projection = glm::mat4();
+glm::mat4 view = glm::mat4();
 
 int main(){
 	//INIZIALIZZO GLFW
@@ -114,7 +124,7 @@ int main(){
 	
 	//CREO LA FINESTRA
 	
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH,SCR_HEIGHT,"Prima Finestra",nullptr,nullptr);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH,SCR_HEIGHT,"Goriziana",nullptr,nullptr);
 	
 	if (!window){
 		std::cout <<"Errore nella creazione della finestra!" << std::endl;
@@ -144,11 +154,10 @@ int main(){
 	//SETTO IL DEPTH TEST
 	glEnable(GL_DEPTH_TEST);
 	
-	Physics poolSimulation;
-	
 	//UTILIZZO LA CLASSE SHADER CREATA PER COMPILARE IL VS ED IL FS, E LINKARLI NEL PS
 	Shader shaderNoTexture("../shaderNoTexture.vert", "../shaderNoTexture.frag");
 	Shader shaderTexture("../shaderTexture.vert","../shaderTexture.frag");
+	Shader shaderDebugger("../shaderDebug.vert", "../shaderDebug.frag");
 	
 	//UTILIZZO LA CLASSE MODEL CREATA PER CARICARE E VISUALIZZARE IL MODELLO 3D
 	//Model modelRoom("../../table/resource/Room.obj");
@@ -158,10 +167,42 @@ int main(){
 	Model modelPlane("../../models/plane/plane.obj");
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE AL PIANO
-	glm::vec3 bodyPlaneSize = glm::vec3(50.0f, 0.1f, 50.0f);
+	/*glm::vec3 bodyPlaneSize = glm::vec3(5.0f, 0.5f, 5.0f);
 	glm::vec3 bodyPlaneRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	
-	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, poolPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);
+	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, poolPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);*/
+	
+	//CREO IL CORPO RIGIDO DA ASSEGNARE AL TAVOLO
+	glm::vec3 bodyTablePos = glm::vec3(0.0f, 6.48f, 0.0f);
+	glm::vec3 bodyTableSize = glm::vec3(12.0f, 0.1f, 5.2f);
+	glm::vec3 bodyTableRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	
+	btRigidBody* bodyTable = poolSimulation.createRigidBody(0, bodyTablePos, bodyTableSize, bodyTableRotation, 0.0, 0.3, 0.3);
+	
+	//CREO I BORDI DEL TAVOLO
+	//LATO LUNGO POSTERIORE
+	glm::vec3 bodyTableLSPos = glm::vec3(0.0f, 6.8f, -5.1f);
+	glm::vec3 bodyTableLSSize = glm::vec3(12.0f, 1.0f, 0.1f);
+	glm::vec3 bodyTableLSRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	
+	bodyTable = poolSimulation.createRigidBody(0, bodyTableLSPos, bodyTableLSSize, bodyTableLSRotation, 0.0, 0.3, 0.3);
+	
+	//LATO LUNGO ANTERIORE
+	bodyTableLSPos = glm::vec3(0.0f, 6.8f, 5.1f);	
+	
+	bodyTable = poolSimulation.createRigidBody(0, bodyTableLSPos, bodyTableLSSize, bodyTableLSRotation, 0.0, 0.3, 0.3);
+	
+	//LATO CORTO SINISTRO
+	glm::vec3 bodyTableSSPos = glm::vec3(-11.7f, 6.8f, 0.0f);
+	glm::vec3 bodyTableSSSize = glm::vec3(0.1f, 1.0f, 5.2f);
+	glm::vec3 bodyTableSSRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	
+	bodyTable = poolSimulation.createRigidBody(0, bodyTableSSPos, bodyTableSSSize, bodyTableSSRotation, 0.0, 0.3, 0.3);
+	
+	//LATO CORTO DESTRO
+	bodyTableSSPos = glm::vec3(11.8f, 6.8f, 0.0f);
+	
+	bodyTable = poolSimulation.createRigidBody(0, bodyTableSSPos, bodyTableSSSize, bodyTableSSRotation, 0.0, 0.3, 0.3);
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE ALLE PALLE
 	glm::vec3 bodyBallRadius = sphereSize;
@@ -174,6 +215,9 @@ int main(){
 	// imposto il delta di tempo massimo per aggiornare la simulazione fisica
     GLfloat maxSecPerFrame = 1.0f / 60.0f;
 	
+	debugger.setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+	poolSimulation.dynamicsWorld->setDebugDrawer(&debugger);
+	
 	//AVVIO IL RENDER LOOP
 	while(!glfwWindowShouldClose(window)){
 		GLfloat currentFrame = glfwGetTime();
@@ -185,6 +229,12 @@ int main(){
 		glClearColor(0.31f, 0.76f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+		view = camera.GetViewMatrix();
+		
+		debugger.SetMatrices(shaderDebugger, projection, view);
+		poolSimulation.dynamicsWorld->debugDrawWorld();
+
 		poolSimulation.dynamicsWorld->stepSimulation((deltaTime < maxSecPerFrame ? deltaTime : maxSecPerFrame), 10);
 		
 		draw_model_notexture(shaderNoTexture, modelBall, bodyBallWhite, bodyBallRed, bodyBallYellow);
@@ -194,6 +244,12 @@ int main(){
 		glfwSwapBuffers(window);
 		glfwPollEvents();		
 	}
+	
+	shaderTexture.Delete();
+	shaderNoTexture.Delete();
+	shaderDebugger.Delete();
+	
+	poolSimulation.Clear();
 	
 	glfwTerminate();
 	
@@ -215,6 +271,9 @@ void processInput(GLFWwindow *window){
 	
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+		
+	if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		throw_ball();
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
@@ -240,6 +299,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
     camera.ProcessMouseScroll(yoffset);
+}
+
+void throw_ball(){
+	std::cout << "Space pressed..." << std::endl;
 }
 
 // Carico immagine da disco e creo texture OpengGL
@@ -277,6 +340,7 @@ GLuint loadTexture(char const * path){
     return textureID;
 }
 
+// Imposto lo shader e renderizzo i modelli degli oggetti senza texture
 void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, btRigidBody* bodyRed, btRigidBody* bodyYellow){	
 	GLfloat matrix[16];
 	btTransform transform;
@@ -304,10 +368,8 @@ void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, b
 	shader.setFloat("quadratic", quadratic);
 	shader.setFloat("shininess", shininess);
 	
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
 	shader.setMat4("projectionMatrix", projection);
 	
-	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("viewMatrix", view);
 	
 	glm::mat4 modelMatrix;
@@ -316,7 +378,7 @@ void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, b
 	bodyWhite->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	modelMatrix = glm::translate(modelMatrix, poolBallPos[0]); 
+	//modelMatrix = glm::translate(modelMatrix, poolBallPos[0]); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
 	//modelMatrix = glm::make_mat4(matrix) * modelMatrix;
@@ -337,7 +399,7 @@ void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, b
 	bodyRed->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	modelMatrix = glm::translate(modelMatrix, poolBallPos[1]); 
+	//modelMatrix = glm::translate(modelMatrix, poolBallPos[1]); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
 	// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
@@ -357,7 +419,7 @@ void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, b
 	bodyYellow->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	modelMatrix = glm::translate(modelMatrix, poolBallPos[2]); 
+	//modelMatrix = glm::translate(modelMatrix, poolBallPos[2]); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
 	// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
@@ -396,22 +458,18 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
 	
 	shader.setFloat("repeat", 1.0f);
 	
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
 	shader.setMat4("projectionMatrix", projection);
 	
-	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("viewMatrix", view);
 	
 	glm::mat4 modelMatrix;
 	glm::mat4 normalMatrix;
 	
-	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.1f, 0.0f)); 
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.1f, -0.15f)); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = glm::scale(modelMatrix, glm::vec3(25.0f, 25.0f, 25.0f));
 	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
-	shader.setMat4("projectionMatrix", projection);
-	shader.setMat4("viewMatrix", view);
 	shader.setMat4("modelMatrix", modelMatrix);
 	shader.setMat3("normalMatrix",normalMatrix);
 	
@@ -419,28 +477,38 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
 	
 	//RENDERIZZO I BIRILLI
 	modelMatrix = glm::mat4();
+	normalMatrix = glm::mat4();
 	
 	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 11.0f, 0.0f)); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.05f, 0.05f, 0.05f));
+	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
 	shader.setMat4("modelMatrix", modelMatrix);
+	shader.setMat3("normalMatrix",normalMatrix);
+	
 	pin.Draw(shader);
 
 	//RENDERIZZO IL PIANO
 	shader.setInt("tex",0);
-	shader.setFloat("repeat",80.0f);
+	shader.setFloat("repeat",2.0f);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	
 	modelMatrix = glm::mat4();
+	normalMatrix = glm::mat4();
 	
 	modelMatrix = glm::translate(modelMatrix, poolPlanePos); 
 	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::scale(modelMatrix, glm::vec3(50.0f, 1.0f, 50.0f));
+	//modelMatrix = glm::scale(modelMatrix, glm::vec3(5.0f, 0.5f, 5.0f));
+	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
 	
 	shader.setMat4("modelMatrix", modelMatrix);
+	shader.setMat3("normalMatrix",normalMatrix);
+	
 	plane.Draw(shader);
+	
+	modelMatrix = glm::mat4();
 }
 

@@ -12,8 +12,8 @@ OutDir                 := $(IntermediateDirectory)
 CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
-User                   :=Gtmax
-Date                   :=12/04/2018
+User                   :=Pc-Utente
+Date                   :=14/04/2018
 CodeLitePath           :="C:/Program Files/CodeLite"
 LinkerName             :=C:/MinGW/bin/g++.exe
 SharedObjectLinkerName :=C:/MinGW/bin/g++.exe -shared -fPIC
@@ -62,7 +62,7 @@ AS       := C:/MinGW/bin/as.exe
 ## User defined environment variables
 ##
 CodeLiteDir:=C:\Program Files\CodeLite
-Objects0=$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix) $(IntermediateDirectory)/Ball.cpp$(ObjectSuffix) $(IntermediateDirectory)/glad.c$(ObjectSuffix) $(IntermediateDirectory)/main.cpp$(ObjectSuffix) 
+Objects0=$(IntermediateDirectory)/main.cpp$(ObjectSuffix) $(IntermediateDirectory)/glad.c$(ObjectSuffix) $(IntermediateDirectory)/Ball.cpp$(ObjectSuffix) $(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix) 
 
 
 
@@ -98,21 +98,13 @@ PreBuild:
 ##
 ## Objects
 ##
-$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix): BulletDebugDrawer.cpp $(IntermediateDirectory)/BulletDebugDrawer.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/BulletDebugDrawer.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/BulletDebugDrawer.cpp$(DependSuffix): BulletDebugDrawer.cpp
-	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/BulletDebugDrawer.cpp$(DependSuffix) -MM BulletDebugDrawer.cpp
+$(IntermediateDirectory)/main.cpp$(ObjectSuffix): main.cpp $(IntermediateDirectory)/main.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/main.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/main.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/main.cpp$(DependSuffix): main.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/main.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/main.cpp$(DependSuffix) -MM main.cpp
 
-$(IntermediateDirectory)/BulletDebugDrawer.cpp$(PreprocessSuffix): BulletDebugDrawer.cpp
-	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/BulletDebugDrawer.cpp$(PreprocessSuffix) BulletDebugDrawer.cpp
-
-$(IntermediateDirectory)/Ball.cpp$(ObjectSuffix): Ball.cpp $(IntermediateDirectory)/Ball.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/Ball.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/Ball.cpp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/Ball.cpp$(DependSuffix): Ball.cpp
-	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/Ball.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/Ball.cpp$(DependSuffix) -MM Ball.cpp
-
-$(IntermediateDirectory)/Ball.cpp$(PreprocessSuffix): Ball.cpp
-	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/Ball.cpp$(PreprocessSuffix) Ball.cpp
+$(IntermediateDirectory)/main.cpp$(PreprocessSuffix): main.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/main.cpp$(PreprocessSuffix) main.cpp
 
 $(IntermediateDirectory)/glad.c$(ObjectSuffix): glad.c $(IntermediateDirectory)/glad.c$(DependSuffix)
 	$(CC) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/glad.c" $(CFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/glad.c$(ObjectSuffix) $(IncludePath)
@@ -122,13 +114,21 @@ $(IntermediateDirectory)/glad.c$(DependSuffix): glad.c
 $(IntermediateDirectory)/glad.c$(PreprocessSuffix): glad.c
 	$(CC) $(CFLAGS) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/glad.c$(PreprocessSuffix) glad.c
 
-$(IntermediateDirectory)/main.cpp$(ObjectSuffix): main.cpp $(IntermediateDirectory)/main.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/main.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/main.cpp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/main.cpp$(DependSuffix): main.cpp
-	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/main.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/main.cpp$(DependSuffix) -MM main.cpp
+$(IntermediateDirectory)/Ball.cpp$(ObjectSuffix): Ball.cpp $(IntermediateDirectory)/Ball.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/Ball.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/Ball.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/Ball.cpp$(DependSuffix): Ball.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/Ball.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/Ball.cpp$(DependSuffix) -MM Ball.cpp
 
-$(IntermediateDirectory)/main.cpp$(PreprocessSuffix): main.cpp
-	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/main.cpp$(PreprocessSuffix) main.cpp
+$(IntermediateDirectory)/Ball.cpp$(PreprocessSuffix): Ball.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/Ball.cpp$(PreprocessSuffix) Ball.cpp
+
+$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix): BulletDebugDrawer.cpp $(IntermediateDirectory)/BulletDebugDrawer.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "C:/Progetto_PGTR/Goriziana/BulletDebugDrawer.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/BulletDebugDrawer.cpp$(DependSuffix): BulletDebugDrawer.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/BulletDebugDrawer.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/BulletDebugDrawer.cpp$(DependSuffix) -MM BulletDebugDrawer.cpp
+
+$(IntermediateDirectory)/BulletDebugDrawer.cpp$(PreprocessSuffix): BulletDebugDrawer.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/BulletDebugDrawer.cpp$(PreprocessSuffix) BulletDebugDrawer.cpp
 
 
 -include $(IntermediateDirectory)/*$(DependSuffix)

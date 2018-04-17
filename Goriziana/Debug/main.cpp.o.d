@@ -229,7 +229,8 @@ Debug/main.cpp.o: main.cpp ../include/glad/glad.h ../include/glfw/glfw3.h \
  ../include/glm/gtc/../gtc/quaternion.hpp \
  ../include/glm/gtc/../gtc/quaternion.inl \
  ../include/glm/gtc/../gtc/quaternion_simd.inl \
- ../include/glm/gtc/type_ptr.inl
+ ../include/glm/gtc/type_ptr.inl BulletDebugDrawer.h \
+ ../include/bullet/LinearMath/btIDebugDraw.h
 
 ../include/glad/glad.h:
 
@@ -762,3 +763,7 @@ c:\progetto_pgtr\include\glm\simd\common.h:
 ../include/glm/gtc/../gtc/quaternion_simd.inl:
 
 ../include/glm/gtc/type_ptr.inl:
+
+BulletDebugDrawer.h:
+
+../include/bullet/LinearMath/btIDebugDraw.h:

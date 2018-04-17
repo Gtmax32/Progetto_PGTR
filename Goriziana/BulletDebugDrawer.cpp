@@ -11,18 +11,16 @@
 
 GLuint VBO, VAO;
 
-int m;
-
 BulletDebugDrawer::BulletDebugDrawer(){}
 
 BulletDebugDrawer::~BulletDebugDrawer(){}
 
-void SetMatrices(Shader &shader, glm::mat4 viewMatrix, glm::mat4 projectionMatrix){
+void BulletDebugDrawer::SetMatrices(Shader &shader, glm::mat4 viewMatrix, glm::mat4 projectionMatrix){
 	shader.setMat4("projectionMatrix", projectionMatrix);
 	shader.setMat4("viewMatrix", viewMatrix);
 }
 
-void drawLine(const btVector3& from, const btVector3& to, const btVector3& color){
+void BulletDebugDrawer::drawLine(const btVector3& from, const btVector3& to, const btVector3& color){
 	// Vertex data
 	GLfloat points[12];
 
@@ -58,11 +56,13 @@ void drawLine(const btVector3& from, const btVector3& to, const btVector3& color
 	glBindVertexArray(0);
 }
 
-void drawContactPoint(const btVector3 &, const btVector3 &, btScalar, int, const btVector3 &) {}
-void reportErrorWarning(const char *) {}
-void draw3dText(const btVector3 &, const char *) {}
-void setDebugMode(int p) {
-	m = p;
+void BulletDebugDrawer::drawContactPoint(const btVector3 &, const btVector3 &, btScalar, int, const btVector3 &) {}
+void BulletDebugDrawer::reportErrorWarning(const char *warningString) {
+	std::cout << warningString << std::endl;
+}
+void BulletDebugDrawer::draw3dText(const btVector3 &, const char *) {}
+void BulletDebugDrawer::setDebugMode(int p) {
+	m_debugMode = p;
 }
 
-int getDebugMode() { return 3; }
+int BulletDebugDrawer::getDebugMode() const { return m_debugMode; }
