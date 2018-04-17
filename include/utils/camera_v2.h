@@ -93,7 +93,7 @@ public:
 		if (direction == RIGHT)
             this->Position += this->Right * velocity;
 		
-		//this->Position.y = 0.0f; // <-- this one-liner keeps the user at the ground level (xz plane)
+		this->Position.y = 9.0f; // <-- this one-liner keeps the user at the ground level (xz plane)
     }
 
     // Aggiorna la posizione della camera in base al movimento del mouse

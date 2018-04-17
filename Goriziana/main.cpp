@@ -41,12 +41,13 @@
 const GLuint SCR_WIDTH = 1280, SCR_HEIGHT = 720;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 9.0f, 20.0f));
+Camera camera(glm::vec3(0.0f, 9.0f, 15.0f));
 
 // Variabili utilizzate per implementare una Camera FPS
 GLfloat lastX = (float)SCR_WIDTH / 2.0f;
 GLfloat lastY = (float)SCR_HEIGHT / 2.0f;
 GLfloat firstMouse = true;
+double mouseX, mouseY;
 
 // Deltatime per uniformare la velocità di movimento
 GLfloat deltaTime = 0.0f;
@@ -100,10 +101,11 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin);
 void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, btRigidBody* bodyRed, btRigidBody* bodyYellow);
 
 // Funzioni per gestire il gioco
-void throw_ball();
+void throw_ball(btRigidBody* ball);
 
 Physics poolSimulation;
 BulletDebugDrawer debugger;
+btRigidBody* bodyBallWhite;
 
 glm::mat4 projection = glm::mat4();
 glm::mat4 view = glm::mat4();
@@ -140,7 +142,7 @@ int main(){
 	glfwSetFramebufferSizeCallback(window,framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	
 	// GLAD cerca di caricare il contesto impostato da GLFW
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
@@ -208,7 +210,7 @@ int main(){
 	glm::vec3 bodyBallRadius = sphereSize;
 	glm::vec3 bodyBallRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	
-	btRigidBody* bodyBallWhite = poolSimulation.createRigidBody(1, poolBallPos[0], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);
+	bodyBallWhite = poolSimulation.createRigidBody(1, poolBallPos[0], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);
 	btRigidBody* bodyBallRed = poolSimulation.createRigidBody(1, poolBallPos[1], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);
 	btRigidBody* bodyBallYellow = poolSimulation.createRigidBody(1, poolBallPos[2], bodyBallRadius, bodyBallRotation, 1.0, 0.3, 0.3);	
 	
@@ -224,12 +226,10 @@ int main(){
 		deltaTime = currentFrame - lastFrame;		
 		lastFrame = currentFrame;
 		
-		processInput(window);
-		
 		glClearColor(0.31f, 0.76f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+		projection = glm::perspective(45.0f, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
 		view = camera.GetViewMatrix();
 		
 		debugger.SetMatrices(shaderDebugger, projection, view);
@@ -240,6 +240,8 @@ int main(){
 		draw_model_notexture(shaderNoTexture, modelBall, bodyBallWhite, bodyBallRed, bodyBallYellow);
 		
 		draw_model_texture(shaderTexture, modelPlane, modelTable, modelPin);		
+		
+		processInput(window);
 		
 		glfwSwapBuffers(window);
 		glfwPollEvents();		
@@ -273,7 +275,7 @@ void processInput(GLFWwindow *window){
 		glfwSetWindowShouldClose(window, true);
 	
 	if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		throw_ball();
+		throw_ball(bodyBallWhite);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
@@ -288,6 +290,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
 		firstMouse = false;
 	}
 	
+	mouseX = xpos;
+	mouseY = ypos;
+	
 	GLfloat xOffset = xpos - lastX;
 	GLfloat yOffset = lastY - ypos; // Inverto la sottrazione per l'asse è negativo in questo caso
 	
@@ -301,8 +306,28 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
     camera.ProcessMouseScroll(yoffset);
 }
 
-void throw_ball(){
-	std::cout << "Space pressed..." << std::endl;
+void throw_ball(btRigidBody* ball){
+	//std::cout << "Space pressed..." << std::endl;
+	GLfloat shootInitialSpeed = 1.0f;
+	
+	GLfloat matrix[16];
+	
+	btVector3 impulse;
+	btTransform transform;
+	
+	glm::vec4 ballPos;
+	
+	ball->getMotionState()->getWorldTransform(transform);
+	transform.getOpenGLMatrix(matrix);
+	
+	ballPos = glm::vec4(matrix[12], matrix[13], matrix[14], matrix[15]);
+	
+	glm::vec4 mousePos = glm::vec4(mouseX, mouseY, 1.0f, 1.0f);
+	
+	glm::vec4 direction = glm::normalize(mousePos - ballPos) * shootInitialSpeed;
+		
+	impulse = btVector3(direction.x, direction.y, direction.z);
+	ball->applyCentralImpulse(impulse);
 }
 
 // Carico immagine da disco e creo texture OpengGL
