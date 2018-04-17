@@ -11,19 +11,44 @@ Classe Shader v2
 #include <glm/glm.hpp>
 
 #include <string>
+#include <cstring>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 
 /********** classe SHADER **********/
 class Shader{
+
+private:
+	std::string shaderName;
 	
 public:
     GLuint ID;
     // Costruttore della classe Shader
-    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr)
-    {
-        // Passo 1: carico i sorgenti degli shader dal path passato come parametro
+    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr){
+		// Passo 0: salvo il nome dello shader, in modo da avere informazioni più dettagliate negli errori
+		char* tmp = (char*) calloc(50, sizeof(char));
+		
+		strcpy(tmp, vertexPath);		
+		shaderName = strtok(tmp, "/");
+		shaderName = strtok(nullptr, ".");
+		
+		/*strcpy(tmp, fragmentPath);
+		fragmentShaderName = strtok(tmp, "/");
+		fragmentShaderName = strtok(nullptr, ".");
+		
+		std::cout << "VS: " << vertexShaderName << "\nFS: " << fragmentShaderName << std::endl;
+		
+		if(geometryPath != nullptr) {
+			strcpy(tmp, geometryPath);
+			geometryShaderName = strtok(tmp, "/");
+			geometryShaderName = strtok(nullptr, "/");
+			
+			//std::cout << "GS: " << geometryShaderName << std::endl;
+		}*/
+		
+		// Passo 1: carico i sorgenti degli shader dal path passato come parametro
         std::string vertexCode;
         std::string fragmentCode;
         std::string geometryCode;
@@ -106,8 +131,8 @@ public:
         glDeleteShader(fragment);
         if(geometryPath != nullptr)
             glDeleteShader(geometry);
-
     }
+	
     // "Installa" il program shader come parte del processo di rendering attuale
     void Use() { 
         glUseProgram(this->ID); 
@@ -177,7 +202,7 @@ private:
             
 			if(!success) {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+                std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << " in SHADER: " << shaderName << ".\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
             }
         }
         else {
@@ -185,7 +210,7 @@ private:
             
 			if(!success) {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+                std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << " in SHADER: " << shaderName << ".\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
             }
         }
     }
