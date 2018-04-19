@@ -97,7 +97,7 @@ void processInput(GLFWwindow* window);
 
 // Funzioni di utility
 GLuint loadTexture(const char* path);
-void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin);
+void draw_model_texture(Shader &shader, Model &plane, btRigidBody* bodyPlane, Model &table, Model &pin);
 void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, btRigidBody* bodyRed, btRigidBody* bodyYellow);
 
 // Funzioni per gestire il gioco
@@ -107,8 +107,10 @@ Physics poolSimulation;
 BulletDebugDrawer debugger;
 btRigidBody* bodyBallWhite;
 
-glm::mat4 projection = glm::mat4();
-glm::mat4 view = glm::mat4();
+glm::mat4 projection(1.0f);
+glm::mat4 view(1.0f);
+glm::mat4 model(1.0f);
+glm::mat3 normal(1.0f);
 
 int main(){
 	//INIZIALIZZO GLFW
@@ -169,10 +171,10 @@ int main(){
 	Model modelPlane("../../models/plane/plane.obj");
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE AL PIANO
-	/*glm::vec3 bodyPlaneSize = glm::vec3(5.0f, 0.5f, 5.0f);
+	glm::vec3 bodyPlaneSize = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::vec3 bodyPlaneRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	
-	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, poolPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);*/
+	btRigidBody* bodyPlane = poolSimulation.createRigidBody(0, poolPlanePos, bodyPlaneSize, bodyPlaneRotation, 0.0, 0.3, 0.3);
 	
 	//CREO IL CORPO RIGIDO DA ASSEGNARE AL TAVOLO
 	glm::vec3 bodyTablePos = glm::vec3(0.0f, 6.48f, 0.0f);
@@ -239,7 +241,7 @@ int main(){
 		
 		draw_model_notexture(shaderNoTexture, modelBall, bodyBallWhite, bodyBallRed, bodyBallYellow);
 		
-		draw_model_texture(shaderTexture, modelPlane, modelTable, modelPin);		
+		draw_model_texture(shaderTexture, modelPlane, bodyPlane, modelTable, modelPin);	
 		
 		processInput(window);
 		
@@ -312,19 +314,21 @@ void throw_ball(btRigidBody* ball){
 	
 	GLfloat matrix[16];
 	
-	btVector3 impulse;
+	btVector3 impulse, origin;
 	btTransform transform;
 	
-	glm::vec4 ballPos;
+	glm::vec3 ballPos;
 	
 	ball->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	ballPos = glm::vec4(matrix[12], matrix[13], matrix[14], matrix[15]);
+	origin = transform.getOrigin();
 	
-	glm::vec4 mousePos = glm::vec4(mouseX, mouseY, 1.0f, 1.0f);
+	ballPos = glm::vec3(origin.getX(), origin.getY(), origin.getZ());
 	
-	glm::vec4 direction = glm::normalize(mousePos - ballPos) * shootInitialSpeed;
+	glm::vec3 mousePos = glm::vec3(mouseX, mouseY, 1.0f);
+	
+	glm::vec3 direction = glm::normalize(mousePos - ballPos) * shootInitialSpeed;
 		
 	impulse = btVector3(direction.x, direction.y, direction.z);
 	ball->applyCentralImpulse(impulse);
@@ -397,67 +401,70 @@ void draw_model_notexture(Shader &shader, Model &ball, btRigidBody* bodyWhite, b
 	
 	shader.setMat4("viewMatrix", view);
 	
-	glm::mat4 modelMatrix;
-	glm::mat3 normalMatrix;
+	model = glm::mat4(1.0f);
+	normal = glm::mat3(1.0f);
 	
 	bodyWhite->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	//modelMatrix = glm::translate(modelMatrix, poolBallPos[0]); 
-	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
-	//modelMatrix = glm::make_mat4(matrix) * modelMatrix;
+	//model = glm::translate(model, poolBallPos[0]);
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::make_mat4(matrix) * glm::scale(model, sphereSize);
+	//model = glm::make_mat4(matrix) * model;
 	
-	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	normal = glm::inverseTranspose(glm::mat3(view*model));
 	
-	shader.setMat4("modelMatrix", modelMatrix);
-	shader.setMat3("normalMatrix",normalMatrix);
+	shader.setMat4("modelMatrix", model);
+	shader.setMat3("normalMatrix",normal);
 	
 	ball.Draw(shader);
 	
 	//RENDERIZZO LA PALLA ROSSA
 	shader.setVec3("diffuseColor", 1.0f, 0.0f, 0.0f);
 	
-	modelMatrix = glm::mat4();
-	normalMatrix = glm::mat4();
+	model = glm::mat4(1.0f);
+	normal = glm::mat3(1.0f);
 	
 	bodyRed->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	//modelMatrix = glm::translate(modelMatrix, poolBallPos[1]); 
-	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
+	//model = glm::translate(model, poolBallPos[1]); 
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::make_mat4(matrix) * glm::scale(model, sphereSize);
 	// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
-	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	normal = glm::inverseTranspose(glm::mat3(view*model));
 	
-	shader.setMat4("modelMatrix", modelMatrix);
-	shader.setMat3("normalMatrix",normalMatrix);
+	shader.setMat4("modelMatrix", model);
+	shader.setMat3("normalMatrix",normal);
 	
 	ball.Draw(shader);
 	
 	//RENDERIZZO LA PALLA GIALLA
 	shader.setVec3("diffuseColor", 1.0f, 1.0f, 0.0f);
 	
-	modelMatrix = glm::mat4();
-	normalMatrix = glm::mat4();
+	model = glm::mat4(1.0f);
+	normal = glm::mat3(1.0f);
 	
 	bodyYellow->getMotionState()->getWorldTransform(transform);
 	transform.getOpenGLMatrix(matrix);
 	
-	//modelMatrix = glm::translate(modelMatrix, poolBallPos[2]); 
-	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::make_mat4(matrix) * glm::scale(modelMatrix, sphereSize);
+	//model = glm::translate(model, poolBallPos[2]); 
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::make_mat4(matrix) * glm::scale(model, sphereSize);
 	// se casto a mat3 una mat4, in automatico estraggo la sottomatrice 3x3 superiore sinistra
-	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	normal = glm::inverseTranspose(glm::mat3(view*model));
 	
-	shader.setMat4("modelMatrix", modelMatrix);
-	shader.setMat3("normalMatrix",normalMatrix);
+	shader.setMat4("modelMatrix", model);
+	shader.setMat3("normalMatrix",normal);
 	
 	ball.Draw(shader);
 }
 
 // Imposto lo shader e renderizzo i modelli degli oggetti con texture
-void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
+void draw_model_texture(Shader &shader, Model &plane, btRigidBody* bodyPlane, Model &table, Model &pin){
+	btTransform transform;
+	GLfloat matrix[16];
+	
 	GLint texture = loadTexture("../../textures/floor.jpg");
 	
 	//RENDERIZZO IL TAVOLO
@@ -487,53 +494,54 @@ void draw_model_texture(Shader &shader, Model &plane, Model &table, Model &pin){
 	
 	shader.setMat4("viewMatrix", view);
 	
-	glm::mat4 modelMatrix;
-	glm::mat4 normalMatrix;
+	model = glm::mat4(1.0f);
+	normal = glm::mat3(1.0f);
 	
-	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.1f, -0.15f)); 
-	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::scale(modelMatrix, glm::vec3(25.0f, 25.0f, 25.0f));
-	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	model = glm::translate(model, glm::vec3(0.0f, 0.1f, -0.15f)); 
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+	normal = glm::inverseTranspose(glm::mat3(view*model));
 	
-	shader.setMat4("modelMatrix", modelMatrix);
-	shader.setMat3("normalMatrix",normalMatrix);
+	shader.setMat4("modelMatrix", model);
+	shader.setMat3("normalMatrix",normal);
 	
 	table.Draw(shader);
 	
 	//RENDERIZZO I BIRILLI
-	modelMatrix = glm::mat4();
-	normalMatrix = glm::mat4();
+	/*model = glm::mat4();
+	normal = glm::mat4();
 	
-	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 11.0f, 0.0f)); 
-	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.05f, 0.05f, 0.05f));
-	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	model = glm::translate(model, glm::vec3(0.0f, 11.0f, 0.0f)); 
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	normal = glm::inverseTranspose(glm::mat3(view*model));
 	
-	shader.setMat4("modelMatrix", modelMatrix);
-	shader.setMat3("normalMatrix",normalMatrix);
+	shader.setMat4("modelMatrix", model);
+	shader.setMat3("normalMatrix",normal);
 	
-	pin.Draw(shader);
+	pin.Draw(shader);*/
 
 	//RENDERIZZO IL PIANO
+	bodyPlane->getMotionState()->getWorldTransform(transform);
+	transform.getOpenGLMatrix(matrix);
+	
 	shader.setInt("tex",0);
 	shader.setFloat("repeat",2.0f);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	
-	modelMatrix = glm::mat4();
-	normalMatrix = glm::mat4();
+	model = glm::mat4(1.0f);
+	normal = glm::mat4(1.0f);
 	
-	modelMatrix = glm::translate(modelMatrix, poolPlanePos); 
-	//modelMatrix = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	//modelMatrix = glm::scale(modelMatrix, glm::vec3(5.0f, 0.5f, 5.0f));
-	normalMatrix = glm::inverseTranspose(glm::mat3(view*modelMatrix));
+	//model = glm::translate(model, poolPlanePos); 
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+	normal = glm::inverseTranspose(glm::mat3(view*model));
 	
-	shader.setMat4("modelMatrix", modelMatrix);
-	shader.setMat3("normalMatrix",normalMatrix);
+	shader.setMat4("modelMatrix", model);
+	shader.setMat3("normalMatrix",normal);
 	
 	plane.Draw(shader);
-	
-	modelMatrix = glm::mat4();
 }
 
